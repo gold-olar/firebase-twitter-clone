@@ -1,0 +1,12 @@
+const { Router } = require("express");
+const router = Router();
+const usersController = require('../controllers/users.ctrl');
+const Validator = require('../utils/validate');
+const Authorizer = require('../utils/authUser');
+
+router.post('/register', Validator.validateRegisterData, usersController.register);
+router.post('/login', Validator.validateLoginData, usersController.login);
+router.post('/uploadImage', Authorizer.authorizeUser, usersController.uploadImage);
+
+
+module.exports = router;
