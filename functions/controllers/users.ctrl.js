@@ -12,16 +12,14 @@ class UserController extends BaseController {
     super();
   }
 
-
-
   async register(req, res) {
     const { username, email, password } = req.body;
-  
+
     try {
       let token;
       let userId;
       const existingUser = await db.doc(`/users/${username}`).get();
-      const defaultImage = 'social.png';
+      const defaultImage = "social.png";
       if (existingUser.exists) {
         return super.sendError(
           res,
@@ -62,17 +60,15 @@ class UserController extends BaseController {
       return super.sendError(res, err, err.message, 500);
     }
   }
-  
-
 
   async login(req, res) {
-      
     try {
       const { email, password } = req.body;
       let token;
-      const loginUser = await firebase.auth().signInWithEmailAndPassword(email, password);
+      const loginUser = await firebase
+        .auth()
+        .signInWithEmailAndPassword(email, password);
 
-      
       if (loginUser) {
         token = await loginUser.user.getIdToken();
         return super.sendSuccess(res, { token }, "Welcome back.", 200);
@@ -91,8 +87,6 @@ class UserController extends BaseController {
     }
   }
 
-
-
   async uploadImage(req, res) {
     try {
       const { headers, user } = req;
@@ -101,8 +95,12 @@ class UserController extends BaseController {
       let imageToBeUploaded;
 
       busboy.on("file", (fieldName, file, fileName, encoding, mimetype) => {
-           if(mimetype !== 'image/png' || mimetype !== 'image/jpe' || mimetype !== 'image/jpeg'){
-            return super.sendError(res, null, 'Invalid image type', 400);
+        if (
+          mimetype !== "image/png" ||
+          mimetype !== "image/jpe" ||
+          mimetype !== "image/jpeg"
+        ) {
+          return super.sendError(res, null, "Invalid image type", 400);
         }
         const imageNameArray = fileName.split(".");
         const imageExtension = imageNameArray[imageNameArray.length - 1];
@@ -121,7 +119,6 @@ class UserController extends BaseController {
       });
 
       busboy.on("finish", async () => {
-       
         const uploadedToBucket = await admin
           .storage()
           .bucket()
@@ -152,9 +149,37 @@ class UserController extends BaseController {
         return super.sendError(res, null, "Image could not be uploaded.", 400);
       });
       return busboy.end(req.rawBody);
-    //   return console.log(req.body); 
+      //   return console.log(req.body);
     } catch (err) {
-        return super.sendError(res, err, err.message, 500);
+      return super.sendError(res, err, err.message, 500);
+    }
+  }
+
+  async addDetails(req, res) {
+    const { bio, website, location } = req.body;
+    const { username } = req.user;
+    const userDetails = {};
+    
+    // Because I do not want an undefined in my Mofokin database..
+    bio ? (userDetails.bio = bio) : null;
+    website ? (userDetails.website = website) : null;
+    location ? (userDetails.location = location) : null;
+
+    try {
+      const updateUserDetails = await db
+        .doc(`users/${username}`)
+        .update(userDetails);
+      if (updateUserDetails) {
+        return super.sendSuccess(res, null, " Updated successfully.", 200);
+      }
+      return super.sendError(
+        res,
+        null,
+        "Profile was not updated, Please try again.",
+        400
+      );
+    } catch (err) {
+      return super.sendError(res, err, err.message, 500);
     }
   }
 }

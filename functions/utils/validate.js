@@ -8,12 +8,20 @@ class Validator extends BaseController {
 
   async validateRegisterData(req, res, next) {
     const { email, password, username, confirmPassword } = req.body;
-    if (!email || !password || !username) {
-      return super.sendError(res, null, "Please fill all fields", 400);
+
+    if ((email && !email.trim()) || !email) {
+      return super.sendError(res, null, "Email must not be empty.", 400);
     }
     if (!validator.isEmail(email)) {
       return super.sendError(res, null, "Enter a valid email", 400);
     }
+    if ((username && !username.trim()) || !username) {
+      return super.sendError(res, null, "Username must not be empty.", 400);
+    }
+    if ((password && !password.trim()) || !password) {
+      return super.sendError(res, null, "Password must not be empty.", 400);
+    }
+
     if (password.length < 8) {
       return super.sendError(
         res,
@@ -31,12 +39,35 @@ class Validator extends BaseController {
 
   async validateLoginData(req, res, next) {
     const { email, password } = req.body;
-    if (!email.trim() || !password.trim()) {
-      return super.sendError(res, null, "Please fill all fields", 400);
+    if ((email && !email.trim()) || !email) {
+      return super.sendError(res, null, "Email must not be empty.", 400);
     }
     if (!validator.isEmail(email)) {
       return super.sendError(res, null, "Enter a valid email", 400);
     }
+    if ((password && !password.trim()) || !password) {
+      return super.sendError(res, null, "Password must not be empty.", 400);
+    }
+    return next();
+  }
+
+  async formatUserUpdateDetails(req, res, next) {
+    const { bio, website, location } = req.body;
+
+    if ((bio && !bio.trim()) || !bio) {
+      delete req.body.bio;
+    }
+
+    if (website && website.trim().substring(0, 4) !== "http") {
+      req.body.website = `http://${website.trim()}`;
+    } else {
+      delete req.body.website;
+    }
+
+    if ((location && !location.trim()) || !location) {
+      delete req.body.location;
+    }
+
     return next();
   }
 }

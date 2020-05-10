@@ -7,6 +7,7 @@ const Authorizer = require('../utils/authUser');
 router.post('/register', Validator.validateRegisterData, usersController.register);
 router.post('/login', Validator.validateLoginData, usersController.login);
 router.post('/uploadImage', Authorizer.authorizeUser, usersController.uploadImage);
+router.post('/addDetails', Authorizer.authorizeUser, Validator.formatUserUpdateDetails, usersController.addDetails);
 
 
 module.exports = router;
