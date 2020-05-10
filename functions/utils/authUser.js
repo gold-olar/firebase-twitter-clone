@@ -21,15 +21,13 @@ class Authorizer extends BaseController {
           .where("userId", "==", decodedToken.uid)
           .limit(1)
           .get();
-        /*
-            Because I can't spread {
-                ...decodedToken,
-                username,
-            }
-            Fuck Shittt Mehn
-          */
-        req.user = decodedToken;
-        req.user.username = userDetails.docs[0].data().username;
+        const { username, imageUrl } = userDetails.docs[0].data();
+
+        req.user = {
+          ...decodedToken,
+          username,
+          imageUrl,
+        };
 
         return next();
       }
@@ -40,12 +38,7 @@ class Authorizer extends BaseController {
         403
       );
     } catch (err) {
-      return super.sendError(
-        res,
-        null,
-        "You do not have acces to this resource",
-        403
-      );
+      return super.sendError(res, err.code, err.message, 403);
     }
   }
 }

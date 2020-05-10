@@ -159,7 +159,7 @@ class UserController extends BaseController {
     const { bio, website, location } = req.body;
     const { username } = req.user;
     const userDetails = {};
-    
+
     // Because I do not want an undefined in my Mofokin database..
     bio ? (userDetails.bio = bio) : null;
     website ? (userDetails.website = website) : null;
@@ -177,6 +177,40 @@ class UserController extends BaseController {
         null,
         "Profile was not updated, Please try again.",
         400
+      );
+    } catch (err) {
+      return super.sendError(res, err, err.message, 500);
+    }
+  }
+
+  async getUserDetails(req, res) {
+    const { username } = req.user;
+    let userDetails = {};
+    try {
+      const userDoc = await db.doc(`users/${username}`).get();
+      if (userDoc.exists) {
+        userDetails = {
+          ...userDetails,
+          credentials: userDoc.data(),
+        };
+        const userLikes = await db
+          .collection("likes")
+          .where("username", "==", username)
+          .get();
+        let likes = [];
+        userLikes.forEach((likesData) => {
+          likes.push(likesData.data());
+        });
+        userDetails = {
+          ...userDetails,
+          likes,
+        };
+      }
+      return super.sendSuccess(
+        res,
+        userDetails,
+        "Fetched user details successfully.",
+        200
       );
     } catch (err) {
       return super.sendError(res, err, err.message, 500);

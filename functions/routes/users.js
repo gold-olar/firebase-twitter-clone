@@ -8,6 +8,7 @@ router.post('/register', Validator.validateRegisterData, usersController.registe
 router.post('/login', Validator.validateLoginData, usersController.login);
 router.post('/uploadImage', Authorizer.authorizeUser, usersController.uploadImage);
 router.post('/addDetails', Authorizer.authorizeUser, Validator.formatUserUpdateDetails, usersController.addDetails);
+router.get('/getUserDetails', Authorizer.authorizeUser, usersController.getUserDetails);
 
 
 module.exports = router;

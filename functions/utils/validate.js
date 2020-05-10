@@ -70,6 +70,18 @@ class Validator extends BaseController {
 
     return next();
   }
+
+
+  async validateTweetData(req, res, next) {
+    const {
+      body: { body }
+    } = req;
+
+    if ((body && !body.trim()) || !body) {
+      return super.sendError(res, null, "This field cannot be empty.", 400);
+    }
+    return next();
+  }
 }
 
 module.exports = new Validator();
