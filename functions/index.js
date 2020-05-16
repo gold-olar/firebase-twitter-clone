@@ -4,6 +4,7 @@ const firebase = require("firebase");
 const serviceAccount = require("../firebaseAuth.json");
 const express = require("express");
 require("dotenv").config();
+const db = admin.firestore();
 
 const app = express();
 
@@ -34,10 +35,79 @@ app.use("/users", usersRouter);
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
-    res.status(404).json({
-        message: 'Not found'
-    })
+  res.status(404).json({
+    message: "Not found",
+  });
 });
-  
 
-exports.api = functions.https.onRequest(app);
+exports.api = functions.region("europe-west1").https.onRequest(app);
+
+exports.createNotificationsOnLike = functions
+  .region("europe-west1")
+  .firestore.document("/likes{id}")
+  .onCreate((snapshot) => {
+    db.doc(`/tweets/${snapshot.data().tweetId}`)
+      .get()
+      .then((doc) => {
+        // eslint-disable-next-line promise/always-return
+        if (doc.exists) {
+          return db.doc(`/notifications/${snapshot.id}`).set({
+            createdAt: admin.firestore.Timestamp.fromDate(new Date()),
+            tweetId: doc.id,
+            recipient: doc.data().username,
+            sender: snapshot.data().username,
+            type: "like",
+            read: false,
+          });
+        }
+      })
+      .then(() => {
+        return;
+      })
+      .catch((err) => {
+        console.log(err);
+        return;
+      });
+  });
+
+exports.deleteNotificationsOnUnlike = functions
+  .region("europe-west1")
+  .firestore.document("/likes{id}")
+  .onDelete((snapshot) => {
+    db.doc(`/notifications/${snapshot.id}`)
+      .delete()
+      .then(() => {
+        return;
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  });
+
+exports.createNotificationsOnComment = functions
+  .region("europe-west1")
+  .firestore.document("/comments{id}")
+  .onCreate((snapshot) => {
+    db.doc(`/tweets/${snapshot.data().tweetId}`)
+      .get()
+      .then((doc) => {
+        // eslint-disable-next-line promise/always-return
+        if (doc.exists) {
+          return db.doc(`/notifications/${snapshot.id}`).set({
+            createdAt: admin.firestore.Timestamp.fromDate(new Date()),
+            tweetId: doc.id,
+            recipient: doc.data().username,
+            sender: snapshot.data().username,
+            type: "comment",
+            read: false,
+          });
+        }
+      })
+      .then(() => {
+        return;
+      })
+      .catch((err) => {
+        console.log(err);
+        return;
+      });
+  });
