@@ -5,7 +5,7 @@ const Validator = require("../utils/validate");
 const Authorizer = require("../utils/authUser");
 
 router.get("/", Authorizer.authorizeUser, tweetsController.getAllTweets);
-router.get("/", Authorizer.authorizeUser, tweetsController.getAllTweets);
+
 router.post(
   "/:tweetId/comment",
   Authorizer.authorizeUser,
@@ -18,5 +18,22 @@ router.post(
   Validator.validateTweetData,
   tweetsController.addTweet
 );
+router.post(
+  "/:tweetId/like",
+  Authorizer.authorizeUser,
+  tweetsController.likeTweet
+);
+router.post(
+  "/:tweetId/unlike",
+  Authorizer.authorizeUser,
+  tweetsController.unlikeTweet
+);
+router.delete(
+  "/:tweetId",
+  Authorizer.authorizeUser,
+  tweetsController.deleteTweet
+);
+
+
 
 module.exports = router;
