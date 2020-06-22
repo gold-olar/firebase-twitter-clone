@@ -211,7 +211,7 @@ class TweetController extends BaseController {
         userImage: imageUrl,
       };
 
-      const existingTweet = db.docs(`tweets/${tweetId}`).get();
+      const existingTweet = await db.doc(`tweets/${tweetId}`).get();
       if (!existingTweet.exists) {
         return super.sendError(
           res,
@@ -221,6 +221,9 @@ class TweetController extends BaseController {
         );
       }
       await existingTweet.ref.update({
+        commentCount: existingTweet.data().commentCount + 1,
+      });
+      const increaseComment = await existingTweet.ref.update({
         commentCount: existingTweet.data().commentCount + 1,
       });
       const comment = await db.collection("comments").add(newComment);

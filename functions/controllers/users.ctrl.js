@@ -95,9 +95,10 @@ class UserController extends BaseController {
       let imageToBeUploaded;
 
       busboy.on("file", (fieldName, file, fileName, encoding, mimetype) => {
+        console.log(mimetype);
         if (
-          mimetype !== "image/png" ||
-          mimetype !== "image/jpe" ||
+          mimetype !== "image/png" &&
+          mimetype !== "image/jpg" &&
           mimetype !== "image/jpeg"
         ) {
           return super.sendError(res, null, "Invalid image type", 400);
