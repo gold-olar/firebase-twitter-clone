@@ -4,7 +4,6 @@ const firebase = require("firebase");
 const serviceAccount = require("../firebaseAuth.json");
 const express = require("express");
 require("dotenv").config();
-const db = admin.firestore();
 
 const app = express();
 
@@ -16,7 +15,7 @@ const firebaseConfig = {
   storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.FIREBASE_MESSAGE_SENDER_ID,
   appId: process.env.FIREBASE_APP_ID,
-  measurementId: process.env.MEASUREMENT_ID,
+  measurementId: process.env.FIREBASE_MEASUREMENT_ID,
 };
 
 admin.initializeApp({
@@ -25,6 +24,8 @@ admin.initializeApp({
 });
 
 firebase.initializeApp(firebaseConfig);
+
+const db = admin.firestore();
 
 // Routes
 const tweetsRouter = require("./routes/tweets");
@@ -40,7 +41,7 @@ app.use((req, res, next) => {
   });
 });
 
-exports.api = functions.region("europe-west1").https.onRequest(app);
+exports.api = functions.https.onRequest(app);
 
 exports.createNotificationsOnLike = functions
   .region("europe-west1")

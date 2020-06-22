@@ -246,9 +246,9 @@ class TweetController extends BaseController {
 
     try {
       const document = await db.doc(`/tweets/${tweetId}`);
-      console.log(document)
+      console.log(document);
       const tweetDocument = await document.get();
-      console.log(tweetDocument, "exists??")
+      console.log(tweetDocument, "exists??");
       if (!tweetDocument.exists) {
         return super.sendError(res, null, "Tweet does not exist", 404);
       }
