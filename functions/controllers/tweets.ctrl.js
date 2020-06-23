@@ -18,7 +18,7 @@ class TweetController extends BaseController {
         data.forEach((doc) => {
           tweets.push({
             tweetId: doc.id,
-            tweetBody: doc.data(),
+            ...doc.data(),
           });
         });
         return super.sendSuccess(res, tweets, "Fetched tweets", 200);

@@ -1,3 +1,4 @@
+/* eslint-disable promise/no-nesting */
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const firebase = require("firebase");
@@ -41,17 +42,20 @@ app.use((req, res, next) => {
   });
 });
 
-exports.api = functions.https.onRequest(app);
+exports.api = functions.region("europe-west1").https.onRequest(app);
+
+// Boi,  Clean up the callback hell you have here godammit !!!
 
 exports.createNotificationsOnLike = functions
   .region("europe-west1")
   .firestore.document("/likes{id}")
   .onCreate((snapshot) => {
-    db.doc(`/tweets/${snapshot.data().tweetId}`)
+    return db
+      .doc(`/tweets/${snapshot.data().tweetId}`)
       .get()
       .then((doc) => {
         // eslint-disable-next-line promise/always-return
-        if (doc.exists) {
+        if (doc.exists && doc.data().username !== snapshot.data().username) {
           return db.doc(`/notifications/${snapshot.id}`).set({
             createdAt: admin.firestore.Timestamp.fromDate(new Date()),
             tweetId: doc.id,
@@ -62,12 +66,8 @@ exports.createNotificationsOnLike = functions
           });
         }
       })
-      .then(() => {
-        return;
-      })
       .catch((err) => {
         console.log(err);
-        return;
       });
   });
 
@@ -75,11 +75,10 @@ exports.deleteNotificationsOnUnlike = functions
   .region("europe-west1")
   .firestore.document("/likes{id}")
   .onDelete((snapshot) => {
-    db.doc(`/notifications/${snapshot.id}`)
+    return db
+      .doc(`/notifications/${snapshot.id}`)
       .delete()
-      .then(() => {
-        return;
-      })
+
       .catch((err) => {
         console.log(err);
       });
@@ -89,11 +88,12 @@ exports.createNotificationsOnComment = functions
   .region("europe-west1")
   .firestore.document("/comments{id}")
   .onCreate((snapshot) => {
-    db.doc(`/tweets/${snapshot.data().tweetId}`)
+    return db
+      .doc(`/tweets/${snapshot.data().tweetId}`)
       .get()
       .then((doc) => {
         // eslint-disable-next-line promise/always-return
-        if (doc.exists) {
+        if (doc.exists && doc.data().username !== snapshot.data().username) {
           return db.doc(`/notifications/${snapshot.id}`).set({
             createdAt: admin.firestore.Timestamp.fromDate(new Date()),
             tweetId: doc.id,
@@ -104,11 +104,66 @@ exports.createNotificationsOnComment = functions
           });
         }
       })
-      .then(() => {
-        return;
-      })
       .catch((err) => {
         console.log(err);
-        return;
+      });
+  });
+
+exports.onUserImageChange = functions
+  .region("europe-west1")
+  .firestore.document("/users/{id}")
+  .onUpdate((change) => {
+    if (change.before.data().imageUrl !== change.after.data().imageUrl) {
+      const batch = db.batch;
+      return db
+        .collection("tweets")
+        .where("username", "==", change.before.data().username)
+        .get()
+        .then((data) => {
+          data.forEach((doc) => {
+            const tweet = db.doc(`/tweets/${doc.id}`);
+            batch.updata(tweet, { userImage: change.after.data().imageUrl });
+          });
+          return batch.commit();
+        });
+    }
+    return true;
+  });
+exports.onTweetDelete = functions
+  .region("europe-west1")
+  .firestore.document("/tweets/{tweetId}")
+  .onDelete((snapshot, context) => {
+    const tweetId = context.params.tweetId;
+    const batch = db.batch;
+    return db
+      .collection("comments")
+      .where("tweetId", "==", tweetId)
+      .get()
+      .then((data) => {
+        data.forEach((doc) => {
+          batch.delete(db.doc(`/comments/${doc.id}`));
+        });
+        return db
+          .collection("likes")
+          .where("tweetId", "==", tweetId)
+          .get()
+          .then((data) => {
+            data.forEach((doc) => {
+              batch.delete(db.doc(`/likes/${doc.id}`));
+            });
+            return db
+              .collection("notifications")
+              .where("tweetId", "==", tweetId)
+              .get()
+              .then((data) => {
+                data.forEach((doc) => {
+                  batch.delete(db.doc(`/notifications/${doc.id}`));
+                });
+                return batch.commit();
+              })
+              .catch((err) => {
+                console.log(err);
+              });
+          });
       });
   });

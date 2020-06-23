@@ -34,6 +34,4 @@ router.delete(
   tweetsController.deleteTweet
 );
 
-
-
 module.exports = router;

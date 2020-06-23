@@ -202,9 +202,23 @@ class UserController extends BaseController {
         userLikes.forEach((likesData) => {
           likes.push(likesData.data());
         });
+        const userNotifications = await db
+          .collection("notifications")
+          .where("recipient", "==", "username")
+          .orderBy("createdAt", "desc")
+          .get();
+        let notifcations = [];
+        userNotifications.forEach((notificationsData) => {
+          notifcations.push({
+            ...notificationsData.data(),
+            id: notificationsDatas.id,
+          });
+        });
+
         userDetails = {
           ...userDetails,
           likes,
+          notifcations,
         };
       }
       return super.sendSuccess(
@@ -213,6 +227,64 @@ class UserController extends BaseController {
         "Fetched user details successfully.",
         200
       );
+    } catch (err) {
+      return super.sendError(res, err, err.message, 500);
+    }
+  }
+
+  async getSingleUser(req, res) {
+    try {
+      let user;
+      const userTweets = [];
+      const {
+        params: { username },
+      } = req;
+
+      const userDoc = await db.doc(`/users/${username}`).get();
+      if (userDoc.exists) {
+        user = userDoc.data();
+        const userTweetsData = await db
+          .collection("tweets")
+          .where("username", "==", username)
+          .orderBy("createdAt", "desc")
+          .get();
+
+        userTweetsData.forEach((userTweet) => {
+          userTweets.push({
+            ...userTweet.data(),
+            id: userTweet.id,
+          });
+        });
+        const userData = {
+          user,
+          userTweets,
+        };
+
+        return super.sendSuccess(
+          res,
+          userData,
+          "Fetched user successfully",
+          200
+        );
+      }
+      return super.sendError(res, null, "User does not exist", 404);
+    } catch (err) {
+      return super.sendError(res, err, err.message, 500);
+    }
+  }
+
+  async markNotifications(req, res) {
+    try {
+      let batch = db.batch();
+      const {
+        body: { notificationIds },
+      } = req;
+      notificationIds.forEach((notificationId) => {
+        const notifcation = db.doc(`/notifications/${notificationId}`);
+        batch.update(notifcation, { read: true });
+      });
+      await batch.commit();
+      return super.sendSuccess(res, null, "Notifications marked as read", 200);
     } catch (err) {
       return super.sendError(res, err, err.message, 500);
     }
